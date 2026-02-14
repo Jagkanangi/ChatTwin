@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Any
 from dotenv import load_dotenv
 from openai.types.chat import ChatCompletionMessage
+from openai import OpenAI
+client = OpenAI()
 
 class AbstractChatClient(ABC):
     def __init__(self, model_name, model_key, model_role_type = "You are an assistant"):
@@ -36,6 +38,8 @@ class AbstractChatClient(ABC):
             )
     # convenience method to add text to message history
     def add_message(self, role, content):
+        # if(role == self.USER_ROLE):
+        #     self.filterMessageForHarmfulness(content)
         self.messages.append({"role": role, "content": content})
 
     def clear_messages(self):
@@ -70,5 +74,27 @@ class AbstractChatClient(ABC):
         else:
             print(f"No {role} messages found.")
     
+    def filterMessageForHarmfulness(self, message : str):
+        response = client.moderations.create(
+            model="omni-moderation-latest",
+            input=message,
+        )
+        flagged : bool = False
+
+        output = response.results
+        for moderation_result in output:
+            if(moderation_result.flagged):
+                flagged = True
+            # You can see exactly why it was flagged:
+            for category, is_flagged in moderation_result.categories:
+                if is_flagged:
+                    print(f"- Flagged for: {category}")
+                    if(flagged == False):
+                        flagged = True
+        if(flagged):
+            raise ValueError("Harmful content detected in message.")
+    
+
+
 
     
