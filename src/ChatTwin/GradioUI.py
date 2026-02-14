@@ -52,16 +52,23 @@ You were an expert in Java but now are looking to excel in AI. You can build and
 
 # llama3 = llama3(model_role_type=system_prompt)
 # function to call gardio
-def input_guardrails(message : str) -> str:
+def input_guardrails(chat_twin : CachingAIModel, message : str) -> bool:
     message = message.replace("<info>", "")
     message = message.replace("</info>", "")
-    return message
+    try:
+        chat_twin.filterMessageForHarmfulness(message)
+    except ValueError as e:
+        return False 
+    return True
 def gradio_function(message, history, chat_twin):
-    message = input_guardrails(message)
+    can_proceed = input_guardrails(chat_twin, message)
     # value_in_dictionary = encode_and_compare(message)
     # message = value_in_dictionary +" If the info tag is present and it is relevant to the question thenyou can respond to the question using the text between the info tag. Do not mention the info tag in your response. " + message 
     # print(message)
-    return chat_twin.chat(prompt=message)
+    if(can_proceed):
+        return chat_twin.chat(prompt=message)
+    else:
+        return "I don't want to respond to that message."
 
 
 # def encode_and_compare(message) -> str :
