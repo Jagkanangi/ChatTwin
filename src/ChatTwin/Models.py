@@ -31,11 +31,11 @@ class WeatherReport(BaseModel):
     Represents a weather report with city, country, temperature, humidity, and units.
     Uses Pydantic for data validation and serialization.
     """
-    city: str
-    country: str
+    city: str = Field(description="The name of the city for the weather report.")
+    country: str = Field(description="The country of the city for the weather report.")
     temperature: float = Field(..., alias="temperature_2m")
     humidity: int = Field(..., alias="relative_humidity_2m")
-    units: str = "Celsius"
+    units: str = Field(default="Celsius", description="The temperature units.")
 
     class Config:
         populate_by_name = True # Allows using both alias and field name
@@ -46,4 +46,4 @@ class Choices(BaseModel):
     A Pydantic model that can represent either a general chat message or a weather request.
     This is used to handle different types of responses from the language model.
     """
-    choice : Union[GeneralChat, Contact, Weather]
+    choice : Union[GeneralChat, Contact, Weather] = Field(description="A union of GeneralChat, Contact, or Weather, representing the chosen action.")

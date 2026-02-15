@@ -1,18 +1,18 @@
 from AbstractModel import AbstractChatClient
-import requests
 from Pushover import PushOver
 from instructor import Instructor, from_litellm
 from functools import singledispatchmethod
 from litellm import completion
-
+from Weather import WeatherService
 # from pydantic import BaseModel, Field
-from Models import GeneralChat, Weather, Contact, Choices, WeatherReport
+from Models import GeneralChat, Weather, Contact, Choices
 
     
 class ChatTwin(AbstractChatClient):
     """
     An AI model that can cache responses and interact with a weather API.
     It inherits from AbstractChatClient and uses the litellm library to communicate with different chat models.
+    The model uses the `instructor` library to process tool calls from the LLM and dispatch them to the appropriate methods.
     """
     def __init__(self, model_name="gpt-4o-mini-2024-07-18", model_key="", model_role_type="You are an assistant"):
         """
@@ -30,27 +30,39 @@ class ChatTwin(AbstractChatClient):
     def initialize_client(self):
         """
         Initializes the instructor client using litellm.
-        This allows the model to respond with Pydantic models.
+        This allows the model to respond with Pydantic models for tool calls.
         """
         self.client = from_litellm(completion)
 
     @singledispatchmethod    
     def process_llm_tool_call(self, bm, completion):
+        """
+        Default method for processing LLM tool calls.
+        This method is called when no specific tool call is matched.
+        """
         self.add_tool_message(completion.choices[0].message, "I cannot find the information for this request. Please try again.")
 
     @process_llm_tool_call.register(GeneralChat)
     def _(self, general_chat, completion):
+        """
+        Processes a general chat message from the LLM.
+        """
         content = general_chat.message
         super().add_message(self.ASSISTANT_ROLE, content)
 
 
     @process_llm_tool_call.register(Weather)
     def _(self, weather, completion):
+        """
+        Processes a weather tool call from the LLM.
+        It gets the weather for the specified city and then calls the chat again to get a natural language response.
+        """
         # Get the weather report for the specified city.
         if(weather.city is None or weather.city.strip() == ""):
             self.add_tool_message(completion.choices[0].message, "Please ask them the name of the city that they want to know the weather for.")
         else :
-            weather_report = self.get_weather_object(city_name=weather.city)
+            weather_service = WeatherService()
+            weather_report = weather_service.get_weather_object(city_name=weather.city)
 
             if(weather_report is not None):
                 # Add messages to the context to guide the model's final response.
@@ -62,6 +74,10 @@ class ChatTwin(AbstractChatClient):
 
     @process_llm_tool_call.register(Contact)
     def _(self, contact, completion):
+        """
+        Processes a contact tool call from the LLM.
+        It sends a pushover notification and then calls the chat again to get a natural language response.
+        """
         # Add messages to the context to guide the model's final response.
         if(contact.name is None or contact.name.strip() == "" or contact.email is None or contact.email.strip() == ""):
             self.add_tool_message(completion.choices[0].message, content="Please ask them for their name if they have not given it already and ask them for their emailid")
@@ -73,7 +89,20 @@ class ChatTwin(AbstractChatClient):
 
 
     def chat(self, prompt=None, temperature=0, max_tokens=500, model=None, print_messages = True, callback : bool = False) -> str:
-    # Usage
+        """
+        Main chat method. It sends a message to the LLM and processes the response.
+        
+        Args:
+            prompt (str, optional): The user's message. Defaults to None.
+            temperature (int, optional): The temperature for the LLM. Defaults to 0.
+            max_tokens (int, optional): The maximum number of tokens for the LLM to generate. Defaults to 500.
+            model (str, optional): The name of the language model to use. Defaults to None.
+            print_messages (bool, optional): Whether to print the messages. Defaults to True.
+            callback (bool, optional): Whether this is a callback from a tool call. Defaults to False.
+
+        Returns:
+            str: The LLM's response.
+        """
         response : Choices
         # Allow the user to change the model for a specific chat, but maintain the conversation history.
         if(prompt is not None):
@@ -81,8 +110,8 @@ class ChatTwin(AbstractChatClient):
         if model is None:
             model = self.model_name
         try:             
-            # Create a completion request to the language model.
-            # The 'response_model' parameter tells the instructor client to parse the response into the 'Common' Pydantic model.
+            # If this is not a callback, it's a new user message.
+            # The 'response_model' parameter tells the instructor client to parse the response into the 'Choices' Pydantic model.
             if(callback == False):
                 response, completion = self.client.chat.create_with_completion(
                     model=model,
@@ -90,6 +119,7 @@ class ChatTwin(AbstractChatClient):
                     response_model=Choices)            
                 self.process_llm_tool_call(response.choice, completion)
             else :
+                # If this is a callback, it means a tool has been called and we need to get a natural language response.
                 chat_response = self.client.chat.completions.create(model=model, messages=self.get_messages(), response_model=GeneralChat)
                 if isinstance(chat_response, GeneralChat):
                     self.add_message(self.ASSISTANT_ROLE, chat_response.message)
@@ -97,34 +127,3 @@ class ChatTwin(AbstractChatClient):
             print(f"An error occurred: {e}")
             return "I seem to have lost my marbles. Can you please try again? If I can't seem to find it can you please come back later?"
         return self.get_last_message(role=self.ASSISTANT_ROLE)
-
-    def get_weather_object(self, city_name: str) -> WeatherReport:
-        """
-        Retrieves weather data for a given city using the Open-Meteo API.
-
-        Args:
-            city_name (str): The name of the city.
-
-        Returns:
-            WeatherReport: A Pydantic model containing the weather report.
-        """
-        # 1. Geocode the city name to get latitude and longitude.
-        geo_url = f"https://geocoding-api.open-meteo.com/v1/search?name={city_name}&count=1&format=json"
-        geo_res = requests.get(geo_url).json()["results"][0]
-        
-        # 2. Get the current weather using the latitude and longitude.
-        lat, lon = geo_res["latitude"], geo_res["longitude"]
-        w_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current=temperature_2m,relative_humidity_2m"
-        w_res = requests.get(w_url).json()["current"]
-        
-        # 3. Instantiate and return the WeatherReport model with the retrieved data.
-        return WeatherReport(
-            city=geo_res["name"],
-            country=geo_res["country"],
-            **w_res # Unpacks temperature_2m and relative_humidity_2m directly
-        )
-
-
-        
-
-
