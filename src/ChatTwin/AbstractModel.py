@@ -50,10 +50,10 @@ class AbstractChatClient(ABC):
         return self.messages
     
     # convenience method to get the last message of a specific role
-    def get_last_message(self, role = None):
+    def get_last_message(self, role = None) -> str:
         if(role is None):
             role = self.SYSTEM_ROLE
-        last_message = None
+        last_message = ""
         if self.messages:
             for message in reversed(self.messages):
                 if(isinstance(message, dict)):
@@ -75,6 +75,15 @@ class AbstractChatClient(ABC):
             print(f"No {role} messages found.")
     
     def filterMessageForHarmfulness(self, message : str):
+        """
+        Filters a message for harmful content using the OpenAI moderation API.
+
+        Args:
+            message: The message to filter.
+
+        Raises:
+            ValueError: If harmful content is detected in the message.
+        """
         response = client.moderations.create(
             model="omni-moderation-latest",
             input=message,
@@ -83,8 +92,6 @@ class AbstractChatClient(ABC):
 
         output = response.results
         for moderation_result in output:
-            if(moderation_result.flagged):
-                flagged = True
             # You can see exactly why it was flagged:
             for category, is_flagged in moderation_result.categories:
                 if is_flagged:

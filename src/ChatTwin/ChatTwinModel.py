@@ -1,0 +1,129 @@
+from AbstractModel import AbstractChatClient
+from Pushover import PushOver
+from instructor import Instructor, from_litellm
+from functools import singledispatchmethod
+from litellm import completion
+from Weather import WeatherService
+# from pydantic import BaseModel, Field
+from Models import GeneralChat, Weather, Contact, Choices
+
+    
+class ChatTwin(AbstractChatClient):
+    """
+    An AI model that can cache responses and interact with a weather API.
+    It inherits from AbstractChatClient and uses the litellm library to communicate with different chat models.
+    The model uses the `instructor` library to process tool calls from the LLM and dispatch them to the appropriate methods.
+    """
+    def __init__(self, model_name="gpt-4o-mini-2024-07-18", model_key="", model_role_type="You are an assistant"):
+        """
+        Initializes the CachingAIModel.
+
+        Args:
+            model_name (str, optional): The name of the language model to use. Defaults to "openai/gpt-5-nano-2025-08-07".
+            model_key (str, optional): The API key for the language model. Defaults to "".
+            model_role_type (str, optional): The role of the model in the chat. Defaults to "You are an assistant".
+        """
+        super().__init__(model_name, model_key, model_role_type=model_role_type)
+        self.client : Instructor
+        self.initialize_client()
+
+    def initialize_client(self):
+        """
+        Initializes the instructor client using litellm.
+        This allows the model to respond with Pydantic models for tool calls.
+        """
+        self.client = from_litellm(completion)
+
+    @singledispatchmethod    
+    def process_llm_tool_call(self, bm, completion):
+        """
+        Default method for processing LLM tool calls.
+        This method is called when no specific tool call is matched.
+        """
+        self.add_tool_message(completion.choices[0].message, "I cannot find the information for this request. Please try again.")
+
+    @process_llm_tool_call.register(GeneralChat)
+    def _(self, general_chat, completion):
+        """
+        Processes a general chat message from the LLM.
+        """
+        content = general_chat.message
+        super().add_message(self.ASSISTANT_ROLE, content)
+
+
+    @process_llm_tool_call.register(Weather)
+    def _(self, weather, completion):
+        """
+        Processes a weather tool call from the LLM.
+        It gets the weather for the specified city and then calls the chat again to get a natural language response.
+        """
+        # Get the weather report for the specified city.
+        if(weather.city is None or weather.city.strip() == ""):
+            self.add_tool_message(completion.choices[0].message, "Please ask them the name of the city that they want to know the weather for.")
+        else :
+            weather_service = WeatherService()
+            weather_report = weather_service.get_weather_object(city_name=weather.city)
+
+            if(weather_report is not None):
+                # Add messages to the context to guide the model's final response.
+                self.add_tool_message(completion.choices[0].message, f"The weather in {weather_report.city} is {weather_report.temperature} degrees Celsius with {weather_report.humidity}% humidity.")
+                # Make another call to the model to get a natural language response based on the weather data.
+            else:
+                self.add_tool_message(completion.choices[0].message, f"I cannot find the information for {weather_report.city}")
+        self.chat(callback=True) 
+
+    @process_llm_tool_call.register(Contact)
+    def _(self, contact, completion):
+        """
+        Processes a contact tool call from the LLM.
+        It sends a pushover notification and then calls the chat again to get a natural language response.
+        """
+        # Add messages to the context to guide the model's final response.
+        if(contact.name is None or contact.name.strip() == "" or contact.email is None or contact.email.strip() == ""):
+            self.add_tool_message(completion.choices[0].message, content="Please ask them for their name if they have not given it already and ask them for their emailid")
+        else:
+            PushOver().send_message("The person would like to get in touch with you")
+            self.add_tool_message(completion.choices[0].message, "Let the user know you will connect with them shortly and thank them for their interest.")
+        # # Make another call to the model to get a natural language response based on the weather data.
+        self.chat(callback=True) 
+
+
+    def chat(self, prompt=None, temperature=0, max_tokens=500, model=None, print_messages = True, callback : bool = False) -> str:
+        """
+        Main chat method. It sends a message to the LLM and processes the response.
+        
+        Args:
+            prompt (str, optional): The user's message. Defaults to None.
+            temperature (int, optional): The temperature for the LLM. Defaults to 0.
+            max_tokens (int, optional): The maximum number of tokens for the LLM to generate. Defaults to 500.
+            model (str, optional): The name of the language model to use. Defaults to None.
+            print_messages (bool, optional): Whether to print the messages. Defaults to True.
+            callback (bool, optional): Whether this is a callback from a tool call. Defaults to False.
+
+        Returns:
+            str: The LLM's response.
+        """
+        response : Choices
+        # Allow the user to change the model for a specific chat, but maintain the conversation history.
+        if(prompt is not None):
+            self.add_message(self.USER_ROLE, prompt)
+        if model is None:
+            model = self.model_name
+        try:             
+            # If this is not a callback, it's a new user message.
+            # The 'response_model' parameter tells the instructor client to parse the response into the 'Choices' Pydantic model.
+            if(callback == False):
+                response, completion = self.client.chat.create_with_completion(
+                    model=model,
+                    messages=self.get_messages(),
+                    response_model=Choices)            
+                self.process_llm_tool_call(response.choice, completion)
+            else :
+                # If this is a callback, it means a tool has been called and we need to get a natural language response.
+                chat_response = self.client.chat.completions.create(model=model, messages=self.get_messages(), response_model=GeneralChat)
+                if isinstance(chat_response, GeneralChat):
+                    self.add_message(self.ASSISTANT_ROLE, chat_response.message)
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return "I seem to have lost my marbles. Can you please try again? If I can't seem to find it can you please come back later?"
+        return self.get_last_message(role=self.ASSISTANT_ROLE)
