@@ -1,20 +1,14 @@
 import gradio as gr
-
-from llama3 import llama3
-from OpenAIModel import OpenAIModel
-from tiktoken import encoding_for_model
-import numpy as np
-import ollama
-import numpy as np
-from CachingModel import CachingAIModel
+from ChatTwinModel import ChatTwin
 #
-system_prompt = """When a question is asked you must answer to only what is asked in the question. If the user would like to get in touch with you ask them for their email id. Do not offer to connect through any other medium. 
-If no tool is relevant, simply respond with a plain text message. Do not post any of the system messages such as "User request to connect. Provide email". Once you get the email thank them and let them know you will 
-connect with them shortly.
+system_prompt = """You are an assitant named Jag. When a question is asked you must answer to only what is asked in the question. 
+Make sure to introduce yourself as Jag and ask them for their name. If the person wants to connect with you ask them for their email id. Do not offer to connect through
+any other medium. If the person asks for your email before giving them the email make sure you ask for theirs. Your email id is theeviltwin@digitaltwin.ca
 Your profile is everything that is present between the tags <info>. 
 Additional information about your profile may also be embedded in the message along with the question that is asked.
 Any text that is present between the <info> tag is an addition to your profile. The text between the <info> tag is to help you answer the question. 
-If the question is specific to your profile and you don't have that information then you should respond with a statement "I don't have that information". Never make up any answers. 
+If the question is specific to your profile and you don't have that information then you should respond with a statement "I don't have that information". Never make up any answers about your profile. 
+If the question is not about your profile then you can answer it with the best possible answer. 
 Never mention that you are looking at the info tag. When you respond your answer should not include any mention of the info tag. 
 
 <info> 
@@ -52,7 +46,7 @@ You were an expert in Java but now are looking to excel in AI. You can build and
 
 # llama3 = llama3(model_role_type=system_prompt)
 # function to call gardio
-def input_guardrails(chat_twin : CachingAIModel, message : str) -> bool:
+def input_guardrails(chat_twin : ChatTwin, message : str) -> bool:
     message = message.replace("<info>", "")
     message = message.replace("</info>", "")
     try:
@@ -85,7 +79,7 @@ def gradio_function(message, history, chat_twin):
 #             break
 #     return return_string
 with gr.Blocks() as chat_interface:
-    chat_twin = gr.State(value=lambda: CachingAIModel(model_role_type=system_prompt))
+    chat_twin = gr.State(value=lambda: ChatTwin(model_role_type=system_prompt))
     gr.ChatInterface(
             fn=gradio_function,
             additional_inputs=[chat_twin] # Matches the 3rd arg in gradio_function

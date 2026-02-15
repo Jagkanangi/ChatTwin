@@ -50,10 +50,10 @@ class AbstractChatClient(ABC):
         return self.messages
     
     # convenience method to get the last message of a specific role
-    def get_last_message(self, role = None):
+    def get_last_message(self, role = None) -> str:
         if(role is None):
             role = self.SYSTEM_ROLE
-        last_message = None
+        last_message = ""
         if self.messages:
             for message in reversed(self.messages):
                 if(isinstance(message, dict)):
