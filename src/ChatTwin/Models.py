@@ -2,9 +2,9 @@ from pydantic import BaseModel, Field
 from typing import Union
 
 from pydantic import BaseModel, Field
-from typing import Union
+from typing import Union, Any
 
-__all__ = ["Weather", "GeneralChat", "Contact", "WeatherReport", "Choices"]
+__all__ = ["Weather", "GeneralChat", "Contact", "WeatherReport", "Choices", "SessionState"]
 
 class Weather(BaseModel):
     """
@@ -50,3 +50,26 @@ class Choices(BaseModel):
     """
     choice : Union[GeneralChat, Contact, Weather] = Field(description="A union of GeneralChat, Contact, or Weather, representing the chosen action.")
 
+class SessionState():
+
+
+    MODEL_KEY = "Model_Key"
+    NUMBER_OF_CALLS_KEY = "Number_of_Calls_Key"
+    
+    def __init__(self):
+        self.state_dict = {}
+
+    def add_to_session(self, key : str, value : Any):
+        self.state_dict[key] = value
+
+    def get_from_session(self, key : str) -> Any:
+        return self.state_dict.get(key)
+
+    def remove_from_session(self, key : str):
+        self.state_dict.pop(key, None)
+    
+    def get_all_session_data(self) -> dict:
+        return self.state_dict
+
+    def clear_session(self):
+        self.state_dict = {}
