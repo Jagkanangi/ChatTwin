@@ -19,7 +19,7 @@ class PushOver:
         }
         response = requests.post(self.url, data=data)
         if response.status_code == 200:
-            print("Message sent successfully.")
+            print("Message sent successfully.", message)
         else:
             print("Failed to send message. Status code:", response.status_code)
             print("Response:", response.text)

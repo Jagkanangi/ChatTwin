@@ -10,20 +10,22 @@ class Weather(BaseModel):
     """
     Represents a request for weather information for a specific city.
     """
-    city: str = Field(description="Name of the city. The field should not be empty.")
+    city: str = Field(description="Name of the city.")
 
 class GeneralChat(BaseModel):
     """
     Represents a general chat message.
     """
-    message : str = Field(description="Response to any user message by the LLM that is not about tool choice Weather or tool choice Contact")
+    message : str = Field(description="Response to any user message by the LLM")
 
 class Contact(BaseModel):
     """
-    Represents a general chat message.
+    Represents a contact request from a user. Obtain Name, Email and optionally a phone number from the user before populating this object or calling this Tool.
     """
-    name : str = Field(description="Name of the user if they want to get in touch. Ask the user for their name if they have not given it already. The field should not be empty.")
-    email : str = Field(description="Email of the user if they want to get touch. Ask the user for their email if they have not given it already. The Field should not be empty. The field should have a valid email format")
+    name : str = Field(description="Name of the user")
+    email : str = Field(description="Email of the user")
+    phone : str | None = Field(description="Phone number of the user")
+
 
 
 class WeatherReport(BaseModel):

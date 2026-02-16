@@ -63,7 +63,7 @@ class ChatTwin(AbstractChatClient):
         # Get the weather report for the specified city. 
         
         if(weather.city is None or weather.city.strip() == ""): 
-            return True # Some reasons LLM returns with an empty object Ignore it. This is not consistent behaviour. Consider it a Model vagaries
+            return True # Some unknown reason LLM returns with an empty object ignore it. This is not consistent behaviour. Consider it a Model vagary.  
         else :
             weather_service = WeatherService()
             weather_report = weather_service.get_weather_object(city_name=weather.city)
@@ -85,10 +85,11 @@ class ChatTwin(AbstractChatClient):
         """
         # Add messages to the context to guide the model's final response.
         if(contact.name is None or contact.name.strip() == "" or contact.email is None or contact.email.strip() == ""):
-            return True #Some reasons LLM returns with an empty object Ignore it. This is not consistent behaviour
+            return True # Some unknown reason LLM returns with an empty object ignore it. This is not consistent behaviour. Consider it a Model vagary.  
+
         else:
-            PushOver().send_message("The person would like to get in touch with you")
-            self.add_tool_message(completion.choices[0].message, "Let the user know you will connect with them shortly and thank them for their interest.")
+            PushOver().send_message(f"The person {contact.name} would like to get in touch with you. His or her email is {contact.email} and their phone number is {contact.phone}")
+            self.add_tool_message(completion.choices[0].message, "Let the user know you will connect with them shortly and thank the user for their interest.")
         # # Make another call to the model to get a natural language response based on the weather data.
         # self.chat(callback=True) 
         return True
@@ -122,15 +123,36 @@ class ChatTwin(AbstractChatClient):
                 model=model,
                 messages=self.get_messages(),
                 response_model=List[Choices])
+            
             call_back_LLM : bool = False
-                
+            """
+              This code handles the following
+              1. If it is a tool call but a general chat
+              2. If it is a tool call with multiple entries example What is the weather in Toronto, Phoenix and Melbourne
+              3. If it is a multiple tool call (e.g. weather in Toronto and contact me)
+              Note that if it is a General Chat we don't have to call the LLM back but any other type we will have to call the LLM back
+              to get a natural language response.
+            """ 
+
             for choices in response:
-                # dont call back LLM for a general chat.
+                """
+                    The self.process_llm_tool_call is decorated with @singledispatchmethod. This is an elegant way 
+                    to let the python interpretor decide at runtime which of the appropriate methods it needs to call.
+                    We avoid any if else logic and if we need to add a new tool, we just add a new method. This logic
+                    will never have to change. This is Python's solution to OOP's to handle overloaded method. 
+                    A more elegant way would be to use DuckTyping but singledispatchmethod is more explicit and for our
+                    current simplistic need we will encapsulate it in this class. 
+                """
                 should_call_back =self.process_llm_tool_call(choices.choice, completion)
+                """Process the entire response before calling the LLM again."""
                 if(call_back_LLM == False and should_call_back == True):
-                    call_back_LLM = True
+                    call_back_LLM = True                     
             if(call_back_LLM):
                 chat_response = self.client.chat.completions.create(model=model, messages=self.get_messages(), response_model=GeneralChat)
+                """ 
+                Can only be a GeneralChat but we will type check it to make sure it is that and not another type that the Instructor or 
+                the LLM thought it would be.
+                """
                 if isinstance(chat_response, GeneralChat):
                     self.add_message(self.ASSISTANT_ROLE, chat_response.message)
         except Exception as e:
