@@ -88,7 +88,7 @@ class ChatTwin(AbstractChatClient):
             return True # Some unknown reason LLM returns with an empty object ignore it. This is not consistent behaviour. Consider it a Model vagary.  
 
         else:
-            PushOver().send_message(f"The person {contact.name} would like to get in touch with you. His or her email is {contact.email}")
+            PushOver().send_message(f"The person {contact.name} would like to get in touch with you. His or her email is {contact.email} and their phone number is {contact.phone}")
             self.add_tool_message(completion.choices[0].message, "Let the user know you will connect with them shortly and thank the user for their interest.")
         # # Make another call to the model to get a natural language response based on the weather data.
         # self.chat(callback=True) 
