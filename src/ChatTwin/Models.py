@@ -49,3 +49,4 @@ class Choices(BaseModel):
     This is used to handle different types of responses from the language model.
     """
     choice : Union[GeneralChat, Contact, Weather] = Field(description="A union of GeneralChat, Contact, or Weather, representing the chosen action.")
+

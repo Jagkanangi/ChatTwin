@@ -27,6 +27,8 @@ class ChatTwin(AbstractChatClient):
         super().__init__(model_name, model_key, model_role_type=model_role_type)
         self.client : Instructor
         self.initialize_client()
+        self.num_calls = 1
+
 
     def initialize_client(self):
         """
@@ -157,5 +159,7 @@ class ChatTwin(AbstractChatClient):
                     self.add_message(self.ASSISTANT_ROLE, chat_response.message)
         except Exception as e:
             print(f"An error occurred: {e}")
-            return "I seem to have lost my marbles. Can you please try again? If I can't seem to find it can you please come back later?"
+            return """This is embarrasing. I am an AI assistant who ever so often start hallucinating or stop following instruction.\
+              I try my best not to do that but you caught me red handed. I have lost my marbles.\
+              Can you please refresh and try again? If I still fail you can you please come back later?"""
         return self.get_last_message(role=self.ASSISTANT_ROLE)
