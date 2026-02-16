@@ -6,7 +6,7 @@ import numpy as np
 from Models import SessionState
 from MyBio import mybio
 #
-system_prompt = mybio["text"]
+system_prompt : str = mybio["text"]
 
 # 
 
