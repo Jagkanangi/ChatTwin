@@ -1,5 +1,7 @@
 import gradio as gr
+import ollama
 from ChatTwinModel import ChatTwin
+import numpy as np
 #
 system_prompt = """You are an assitant named Jag. When a question is asked you must answer to only what is asked in the question. 
 Make sure to introduce yourself as Jag and ask them for their name. If, and only if, the user wants to connect with you ask them for their contact details specifically their email id and optionally a phone number. 
@@ -49,16 +51,29 @@ You were an expert in Java but now are looking to excel in AI. You can build and
 
 # llama3 = llama3(model_role_type=system_prompt)
 # function to call gardio
-def input_guardrails(chat_twin : ChatTwin, message : str) -> bool:
+def input_guardrails(chat_twin : ChatTwin, message : str) -> tuple[bool, str]:
     message = message.replace("<info>", "")
     message = message.replace("</info>", "")
+    can_continue : bool = True
+    err_message : str = "No anomally detected."
     try:
         chat_twin.filterMessageForHarmfulness(message)
     except ValueError as e:
-        return False 
-    return True
+        can_continue = False
+        err_message = "Harmful or abusive content detected in message."
+    if(len(message) > 500):
+        can_continue = False
+        err_message = "Message is too long. If you want to know more about me, please give me your email and optionally a phone number. "
+    if(chat_twin.num_calls > 10):
+        can_continue = False
+        err_message = "I know you would like to know more about me cause I am that interesting. Please give me your email and optionally a phone number and I will get in touch with you"
+
+
+    
+    
+    return (can_continue, err_message) # This line was already there, but the previous return True was removed.
 def gradio_function(message, history, chat_twin):
-    can_proceed = input_guardrails(chat_twin, message)
+    (can_proceed, err_message)= input_guardrails(chat_twin, message)
     # value_in_dictionary = encode_and_compare(message)
     # message = value_in_dictionary +" If the info tag is present and it is relevant to the question thenyou can respond to the question using the text between the info tag. Do not mention the info tag in your response. " + message 
     # print(message)
@@ -66,7 +81,7 @@ def gradio_function(message, history, chat_twin):
     if(can_proceed):
         return_str = chat_twin.chat(prompt=message)
     else:
-        return_str = "I don't want to respond to that message."
+        return_str = err_message
     return return_str
 
 
