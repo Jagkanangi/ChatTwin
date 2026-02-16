@@ -4,11 +4,10 @@ import os
 from ChatTwinModel import ChatTwin
 import numpy as np
 from Models import SessionState
-from dotenv import load_dotenv
-load_dotenv()
+from MyBio import mybio
 #
-system_prompt = os.getenv("SYSTEM_PROMPT")
-print(system_prompt)
+system_prompt = mybio["text"]
+
 # 
 
 # additional_prompt = {"Where do you live?": "<info> You live in Toronto <info>", 
