@@ -1,10 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import Any
 from dotenv import load_dotenv
 from openai.types.chat import ChatCompletionMessage
-from openai import OpenAI
-client = OpenAI()
-
 class AbstractChatClient(ABC):
     def __init__(self, model_name, model_key, model_role_type = "You are an assistant"):
         load_dotenv()
@@ -84,6 +80,12 @@ class AbstractChatClient(ABC):
         Raises:
             ValueError: If harmful content is detected in the message.
         """
+        import openai as client
+        import os
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY environment variable not set.")
+        client.api_key = api_key        
         response = client.moderations.create(
             model="omni-moderation-latest",
             input=message,

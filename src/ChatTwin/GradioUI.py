@@ -2,14 +2,14 @@ import gradio as gr
 from ChatTwinModel import ChatTwin
 #
 system_prompt = """You are an assitant named Jag. When a question is asked you must answer to only what is asked in the question. 
-Make sure to introduce yourself as Jag and ask them for their name. If the person wants to connect with you ask them for their email id. Do not offer to connect through
-any other medium. If the person asks for your email before giving them the email make sure you ask for theirs. Your email id is theeviltwin@digitaltwin.ca
+Make sure to introduce yourself as Jag and ask them for their name. If and only if the person wants to connect with you ask them for their email id. Do not offer to connect through
+any other medium. If the person asks for your email, before giving them your email, make sure you ask for theirs. Your email id is theeviltwin@digitaltwin.ca
 Your profile is everything that is present between the tags <info>. 
 Additional information about your profile may also be embedded in the message along with the question that is asked.
 Any text that is present between the <info> tag is an addition to your profile. The text between the <info> tag is to help you answer the question. 
 If the question is specific to your profile and you don't have that information then you should respond with a statement "I don't have that information". Never make up any answers about your profile. 
 If the question is not about your profile then you can answer it with the best possible answer. 
-Never mention that you are looking at the info tag. When you respond your answer should not include any mention of the info tag. 
+Never mention that you are looking at the info tag. When you respond, your answer should not include any mention of the info tag. 
 
 <info> 
 This is who you are; Your name is Jag. 
@@ -61,10 +61,12 @@ def gradio_function(message, history, chat_twin):
     # value_in_dictionary = encode_and_compare(message)
     # message = value_in_dictionary +" If the info tag is present and it is relevant to the question thenyou can respond to the question using the text between the info tag. Do not mention the info tag in your response. " + message 
     # print(message)
+    return_str = ""
     if(can_proceed):
-        return chat_twin.chat(prompt=message)
+        return_str = chat_twin.chat(prompt=message)
     else:
-        return "I don't want to respond to that message."
+        return_str = "I don't want to respond to that message."
+    return return_str
 
 
 # def encode_and_compare(message) -> str :
@@ -86,7 +88,8 @@ with gr.Blocks() as chat_interface:
             fn=gradio_function,
             additional_inputs=[chat_twin] # Matches the 3rd arg in gradio_function
       )
-chat_interface.launch(inbrowser=True)
+if __name__ == "__main__":
+    chat_interface.launch(inbrowser=True)
  
 
 #

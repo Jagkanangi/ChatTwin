@@ -4,6 +4,7 @@ from instructor import Instructor, from_litellm
 from functools import singledispatchmethod
 from litellm import completion
 from Weather import WeatherService
+from typing import List
 # from pydantic import BaseModel, Field
 from Models import GeneralChat, Weather, Contact, Choices
 
@@ -35,31 +36,34 @@ class ChatTwin(AbstractChatClient):
         self.client = from_litellm(completion)
 
     @singledispatchmethod    
-    def process_llm_tool_call(self, bm, completion):
+    def process_llm_tool_call(self, bm, completion) -> bool:
         """
         Default method for processing LLM tool calls.
         This method is called when no specific tool call is matched.
         """
         self.add_tool_message(completion.choices[0].message, "I cannot find the information for this request. Please try again.")
+        return True
 
     @process_llm_tool_call.register(GeneralChat)
-    def _(self, general_chat, completion):
+    def _(self, general_chat, completion) -> bool:
         """
         Processes a general chat message from the LLM.
         """
         content = general_chat.message
         super().add_message(self.ASSISTANT_ROLE, content)
+        return False
 
 
     @process_llm_tool_call.register(Weather)
-    def _(self, weather, completion):
+    def _(self, weather, completion) -> bool:
         """
         Processes a weather tool call from the LLM.
         It gets the weather for the specified city and then calls the chat again to get a natural language response.
         """
-        # Get the weather report for the specified city.
-        if(weather.city is None or weather.city.strip() == ""):
-            self.add_tool_message(completion.choices[0].message, "Please ask them the name of the city that they want to know the weather for.")
+        # Get the weather report for the specified city. 
+        
+        if(weather.city is None or weather.city.strip() == ""): 
+            return True # Some reasons LLM returns with an empty object Ignore it. This is not consistent behaviour. Consider it a Model vagaries
         else :
             weather_service = WeatherService()
             weather_report = weather_service.get_weather_object(city_name=weather.city)
@@ -70,25 +74,27 @@ class ChatTwin(AbstractChatClient):
                 # Make another call to the model to get a natural language response based on the weather data.
             else:
                 self.add_tool_message(completion.choices[0].message, f"I cannot find the information for {weather_report.city}")
-        self.chat(callback=True) 
+        return True
+        # self.chat(callback=True) 
 
     @process_llm_tool_call.register(Contact)
-    def _(self, contact, completion):
+    def _(self, contact, completion) -> bool:
         """
         Processes a contact tool call from the LLM.
         It sends a pushover notification and then calls the chat again to get a natural language response.
         """
         # Add messages to the context to guide the model's final response.
         if(contact.name is None or contact.name.strip() == "" or contact.email is None or contact.email.strip() == ""):
-            self.add_tool_message(completion.choices[0].message, content="Please ask them for their name if they have not given it already and ask them for their emailid")
+            return True #Some reasons LLM returns with an empty object Ignore it. This is not consistent behaviour
         else:
             PushOver().send_message("The person would like to get in touch with you")
             self.add_tool_message(completion.choices[0].message, "Let the user know you will connect with them shortly and thank them for their interest.")
         # # Make another call to the model to get a natural language response based on the weather data.
-        self.chat(callback=True) 
+        # self.chat(callback=True) 
+        return True
 
 
-    def chat(self, prompt=None, temperature=0, max_tokens=500, model=None, print_messages = True, callback : bool = False) -> str:
+    def chat(self, prompt=None, temperature=0, max_tokens=500, model=None, print_messages = True) -> str:
         """
         Main chat method. It sends a message to the LLM and processes the response.
         
@@ -103,7 +109,7 @@ class ChatTwin(AbstractChatClient):
         Returns:
             str: The LLM's response.
         """
-        response : Choices
+        response : List
         # Allow the user to change the model for a specific chat, but maintain the conversation history.
         if(prompt is not None):
             self.add_message(self.USER_ROLE, prompt)
@@ -112,14 +118,18 @@ class ChatTwin(AbstractChatClient):
         try:             
             # If this is not a callback, it's a new user message.
             # The 'response_model' parameter tells the instructor client to parse the response into the 'Choices' Pydantic model.
-            if(callback == False):
-                response, completion = self.client.chat.create_with_completion(
-                    model=model,
-                    messages=self.get_messages(),
-                    response_model=Choices)            
-                self.process_llm_tool_call(response.choice, completion)
-            else :
-                # If this is a callback, it means a tool has been called and we need to get a natural language response.
+            response, completion = self.client.chat.create_with_completion(
+                model=model,
+                messages=self.get_messages(),
+                response_model=List[Choices])
+            call_back_LLM : bool = False
+                
+            for choices in response:
+                # dont call back LLM for a general chat.
+                should_call_back =self.process_llm_tool_call(choices.choice, completion)
+                if(call_back_LLM == False and should_call_back == True):
+                    call_back_LLM = True
+            if(call_back_LLM):
                 chat_response = self.client.chat.completions.create(model=model, messages=self.get_messages(), response_model=GeneralChat)
                 if isinstance(chat_response, GeneralChat):
                     self.add_message(self.ASSISTANT_ROLE, chat_response.message)
