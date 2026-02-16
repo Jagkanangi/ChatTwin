@@ -20,7 +20,7 @@ class GeneralChat(BaseModel):
 
 class Contact(BaseModel):
     """
-    Represents a general chat message.
+    Represents a contact request from a user.
     """
     name : str = Field(description="Name of the user if they want to get in touch. Ask the user for their name if they have not given it already. The field should not be empty.")
     email : str = Field(description="Email of the user if they want to get touch. Ask the user for their email if they have not given it already. The Field should not be empty. The field should have a valid email format")
