@@ -1,5 +1,8 @@
 import os
 import openai as client
+import logging
+
+logger = logging.getLogger(__name__)
 
 from AbstractModel import AbstractChatClient
 
@@ -55,9 +58,9 @@ class OpenAIModel(AbstractChatClient):
             """
             self.add_message(self.SYSTEM_ROLE, content)
             if(print_messages):
-                print(content)
+                logger.info(content)
         except Exception as e:
-            print(f"An error occurred: {e}")
+            logger.error(f"An error occurred: {e}", exc_info=True)
             raise e
         if (content is None):
             return "An error occurred during the chat. Response is empty"

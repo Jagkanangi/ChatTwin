@@ -1,5 +1,9 @@
 import requests
 from dotenv import load_dotenv
+import logging
+
+logger = logging.getLogger(__name__)
+
 load_dotenv()
 import os
 
@@ -9,8 +13,8 @@ class PushOver:
         self.user_key = os.getenv("PUSHOVER_USER_KEY")
         self.url = "https://api.pushover.net/1/messages.json"
         if not self.api_key or not self.user_key:
-            print(f"Pushover API Key or User Key not found in environment variables. api {self.api_key} user {self.user_key}")
-            exit()
+            logger.error("Pushover API Key or User Key not found in environment variables.")
+            raise ValueError("Pushover API Key or User Key not found.")
     def send_message(self, message):
         data = {
             "token": self.api_key,
@@ -19,8 +23,7 @@ class PushOver:
         }
         response = requests.post(self.url, data=data)
         if response.status_code == 200:
-            print("Message sent successfully.", message)
+            logger.info(f"Pushover message sent successfully: {message}")
         else:
-            print("Failed to send message. Status code:", response.status_code)
-            print("Response:", response.text)
+            logger.error(f"Failed to send Pushover message. Status code: {response.status_code}, Response: {response.text}")
 
