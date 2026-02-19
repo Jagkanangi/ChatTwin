@@ -1,4 +1,4 @@
-from Models import WeatherReport
+from vo.Models import WeatherReport
 import requests
 
 

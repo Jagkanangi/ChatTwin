@@ -13,3 +13,4 @@ dependencies = [
     "pushover>=0.5",
     "pydantic>=2.12.5",
 ]
+
