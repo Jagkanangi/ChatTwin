@@ -1,6 +1,10 @@
 from abc import ABC, abstractmethod
 from dotenv import load_dotenv
 from openai.types.chat import ChatCompletionMessage
+import logging
+
+logger = logging.getLogger(__name__)
+
 class AbstractChatClient(ABC):
     def __init__(self, model_name, model_key, model_role_type = "You are an assistant"):
         load_dotenv()
@@ -60,15 +64,15 @@ class AbstractChatClient(ABC):
     # print all messages
     def print_messages(self):
         for message in self.messages:
-            print(f"{message['role']}: {message['content']}")
+            logger.info(f"{message['role']}: {message['content']}")
 
     # print the last message that was recieved from the LLM 
     def print_last_message(self, role = "system"):
         last_message = self.get_last_message(role)
         if last_message:
-            print(f"{role}: {last_message}")
+            logger.info(f"{role}: {last_message}")
         else:
-            print(f"No {role} messages found.")
+            logger.info(f"No {role} messages found.")
     
     def filterMessageForHarmfulness(self, message : str):
         """
@@ -97,7 +101,7 @@ class AbstractChatClient(ABC):
             # You can see exactly why it was flagged:
             for category, is_flagged in moderation_result.categories:
                 if is_flagged:
-                    print(f"- Flagged for: {category}")
+                    logger.warning(f"- Flagged for: {category}")
                     if(flagged == False):
                         flagged = True
         if(flagged):

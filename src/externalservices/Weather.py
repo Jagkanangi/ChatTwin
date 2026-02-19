@@ -1,6 +1,8 @@
 from vo.Models import WeatherReport
 import requests
+import logging
 
+logger = logging.getLogger(__name__)
 
 class WeatherService():
     def get_weather_object(self, city_name: str) -> WeatherReport:
@@ -33,5 +35,5 @@ class WeatherService():
                 **w_res # Unpacks temperature_2m and relative_humidity_2m directly
             )
         except (requests.exceptions.RequestException, KeyError, IndexError) as e:
-            print(f"An error occurred while getting weather: {e}")
+            logger.error(f"An error occurred while getting weather for {city_name}: {e}", exc_info=True)
             return None

@@ -22,6 +22,9 @@ COPY pyproject.toml uv.lock ./
 #Install the dependencies
 RUN uv pip install --system -r pyproject.toml
 
+# create the log directory
+run mkdir -p /app/logs
+
 # Copy all the files from the current directory to the container.
 COPY . .
 

@@ -1,13 +1,17 @@
-from Models.AbstractModel import AbstractChatClient
-from ExternalServices.Pushover import PushOver
+from model.AbstractModel import AbstractChatClient
+from externalservices.Pushover import PushOver
 from instructor import Instructor, from_litellm
 from functools import singledispatchmethod
 from litellm import completion
-from ExternalServices.Weather import WeatherService
+from externalservices.Weather import WeatherService
 from typing import List
+from decorators.AutoLog import log_vo
+import logging
 # from pydantic import BaseModel, Field
 from vo.Models import GeneralChat, Weather, Contact, Choices
 import traceback
+
+logger = logging.getLogger(__name__)
     
 class ChatTwin(AbstractChatClient):
     """
@@ -47,6 +51,7 @@ class ChatTwin(AbstractChatClient):
         return True
 
     @process_llm_tool_call.register(GeneralChat)
+    @log_vo
     def _(self, general_chat, completion) -> bool:
         """
         Processes a general chat message from the LLM.
@@ -57,12 +62,15 @@ class ChatTwin(AbstractChatClient):
 
 
     @process_llm_tool_call.register(Weather)
+    @log_vo
     def _(self, weather, completion) -> bool:
         """
         Processes a weather tool call from the LLM.
         It gets the weather for the specified city and then calls the chat again to get a natural language response.
         """
         # Get the weather report for the specified city. 
+        if(weather is None):
+            return True # Some unknown reason LLM returns with an empty object ignore it. This is not consistent behaviour. Consider it a Model vagary.  
         
         if(weather.city is None or weather.city.strip() == ""): 
             return True # Some unknown reason LLM returns with an empty object ignore it. This is not consistent behaviour. Consider it a Model vagary.  
@@ -80,11 +88,14 @@ class ChatTwin(AbstractChatClient):
         # self.chat(callback=True) 
 
     @process_llm_tool_call.register(Contact)
+    @log_vo
     def _(self, contact, completion) -> bool:
         """
         Processes a contact tool call from the LLM.
         It sends a pushover notification and then calls the chat again to get a natural language response.
         """
+        if(contact is None):
+            return True # Some unknown reason LLM returns with an empty object ignore it. This is not consistent behaviour. Consider it a Model vagary.  
         # Add messages to the context to guide the model's final response.
         if(contact.name is None or contact.name.strip() == "" or contact.email is None or contact.email.strip() == ""):
             return True # Some unknown reason LLM returns with an empty object ignore it. This is not consistent behaviour. Consider it a Model vagary.  
@@ -158,8 +169,7 @@ class ChatTwin(AbstractChatClient):
                 if isinstance(chat_response, GeneralChat):
                     self.add_message(self.ASSISTANT_ROLE, chat_response.message)
         except Exception as e:
-            traceback.print_exc()
-            print(f"An error occurred: {e}")
+            logger.error(f"An error occurred: {e}", exc_info=True)
             return """This is embarrasing. I am an AI assistant who ever so often start hallucinating or stop following instruction.\
               I try my best not to do that but you caught me red handed. I have lost my marbles.\
               Can you please refresh and try again? If I still fail you can you please come back later?"""

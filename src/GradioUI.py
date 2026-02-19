@@ -1,10 +1,15 @@
 import gradio as gr
-import ollama
-import os
-from Models.ChatTwinModel import ChatTwin
-import numpy as np
+from model.ChatTwinModel import ChatTwin
 from vo.Models import SessionState
 from vo.MyBio import mybio
+import logging
+import utils.LoggerInit
+
+
+
+
+# Get a logger for this module
+logger = logging.getLogger(__name__)
 #
 system_prompt : str = mybio["text"]
 
@@ -24,6 +29,7 @@ def input_guardrails(chat_twin : ChatTwin, message : str) -> tuple[bool, str]:
     try:
         chat_twin.filterMessageForHarmfulness(message)
     except ValueError as e:
+        logger.warning(f"Harmful or abusive content detected in message: {e}")
         can_continue = False
         err_message = "Harmful or abusive content detected in message."
     if(len(message) > 500):
@@ -66,6 +72,7 @@ def gradio_function(message, history, session_state):
 #     return return_string
 
 def create_initial_state():
+    logger.info("New user session started.")
     # This function runs EVERY TIME a new user opens the page
     new_session = SessionState()
     new_session.add_to_session(
