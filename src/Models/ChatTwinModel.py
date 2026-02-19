@@ -1,13 +1,13 @@
-from AbstractModel import AbstractChatClient
-from Pushover import PushOver
+from Models.AbstractModel import AbstractChatClient
+from ExternalServices.Pushover import PushOver
 from instructor import Instructor, from_litellm
 from functools import singledispatchmethod
 from litellm import completion
-from Weather import WeatherService
+from ExternalServices.Weather import WeatherService
 from typing import List
 # from pydantic import BaseModel, Field
-from Models import GeneralChat, Weather, Contact, Choices
-
+from vo.Models import GeneralChat, Weather, Contact, Choices
+import traceback
     
 class ChatTwin(AbstractChatClient):
     """
@@ -158,6 +158,7 @@ class ChatTwin(AbstractChatClient):
                 if isinstance(chat_response, GeneralChat):
                     self.add_message(self.ASSISTANT_ROLE, chat_response.message)
         except Exception as e:
+            traceback.print_exc()
             print(f"An error occurred: {e}")
             return """This is embarrasing. I am an AI assistant who ever so often start hallucinating or stop following instruction.\
               I try my best not to do that but you caught me red handed. I have lost my marbles.\

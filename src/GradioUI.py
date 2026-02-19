@@ -1,10 +1,10 @@
 import gradio as gr
 import ollama
 import os
-from ChatTwinModel import ChatTwin
+from Models.ChatTwinModel import ChatTwin
 import numpy as np
-from Models import SessionState
-from MyBio import mybio
+from vo.Models import SessionState
+from vo.MyBio import mybio
 #
 system_prompt : str = mybio["text"]
 
