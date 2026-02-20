@@ -6,6 +6,11 @@ My Objective is not only to learn but also help others who are starting off on t
 
 My use of structure in the code may woefully seem over-engineered to some, but it is a reflection of how I approach real-world projects. It also might boldly announce my career using Java for over 2 decades. There are some pythonic standards that I might have missed. I also have used mostly classes as that is what I am most comfortable working with. 
 
+To get to run the latest version including all dependencies either run 
+"just run" from your terminal (if you have just tool installed)
+or 
+uv run gradio src/GradioUI.py
+
 
 ## ⚖️ Attribution
 
