@@ -22,6 +22,9 @@ COPY pyproject.toml uv.lock ./
 #Install the dependencies
 RUN uv pip install --system -r pyproject.toml
 
+# Import the chonkie embedding model
+RUN python -c "from chonkie import SemanticChunker; SemanticChunker(embedding_model='minishlab/potion-base-32M')"
+
 # create the log directory
 RUN  mkdir -p /app/logs
 
