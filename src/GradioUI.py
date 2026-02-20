@@ -3,7 +3,9 @@ from model.ChatTwinModel import ChatTwin
 from vo.Models import SessionState
 from vo.MyBio import mybio
 import logging
-import utils.LoggerInit
+from utils.LoggerInit import init as initialize_logger
+from embeddings.ChonkieSemanticEmbedding import ChonkieSemanticEmbedding
+initialize_logger()
 
 
 
@@ -45,6 +47,10 @@ def input_guardrails(chat_twin : ChatTwin, message : str) -> tuple[bool, str]:
     return (can_continue, err_message) # This line was already there, but the previous return True was removed.
 def gradio_function(message, history, session_state):
     chat_twin = session_state.get_from_session(SessionState.MODEL_KEY)
+    if(message == "Hi"):
+        chonkie_semantic_embedding = ChonkieSemanticEmbedding(file_name="data/Jag_Kanangi.htm", dir_name=None, text=None)
+        chonkie_semantic_embedding.get_embeddings()
+
     (can_proceed, err_message)= input_guardrails(chat_twin, message)
     # value_in_dictionary = encode_and_compare(message)
     # message = value_in_dictionary +" If the info tag is present and it is relevant to the question thenyou can respond to the question using the text between the info tag. Do not mention the info tag in your response. " + message 
@@ -83,7 +89,7 @@ def create_initial_state():
 
 with gr.Blocks() as chat_interface:
     state_object = gr.State(value=create_initial_state)
-    
+
     gr.ChatInterface(
             fn=gradio_function,
             additional_inputs=[state_object] # Matches the 3rd arg in gradio_function
