@@ -23,7 +23,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv pip install --system -r pyproject.toml
 
 # create the log directory
-run mkdir -p /app/logs
+RUN  mkdir -p /app/logs
 
 # Copy all the files from the current directory to the container.
 COPY . .
@@ -33,4 +33,4 @@ COPY . .
 EXPOSE 8080
 
 # Run the application using python.
-CMD ["python", "src/ChatTwin/GradioUI.py"]
+CMD ["python", "src/GradioUI.py"]
