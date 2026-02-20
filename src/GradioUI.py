@@ -23,7 +23,7 @@ system_prompt : str = mybio["text"]
 
 # llama3 = llama3(model_role_type=system_prompt)
 # function to call gardio
-def input_guardrails(chat_twin : ChatTwin, message : str) -> tuple[bool, str]:
+def input_guardrails(chat_twin : ChatTwin, message : str, number_of_calls : int) -> tuple[bool, str]:
     message = message.replace("<info>", "")
     message = message.replace("</info>", "")
     can_continue : bool = True
@@ -37,7 +37,7 @@ def input_guardrails(chat_twin : ChatTwin, message : str) -> tuple[bool, str]:
     if(len(message) > 500):
         can_continue = False
         err_message = "Message is too long. If you want to know more about me, please give me your email and optionally a phone number. "
-    if(chat_twin.num_calls > 10):
+    if(chat_twin.num_calls > 100):
         can_continue = False
         err_message = "I know you would like to know more about me cause I am that interesting. Please give me your email and optionally a phone number and I will get in touch with you"
 
@@ -47,14 +47,13 @@ def input_guardrails(chat_twin : ChatTwin, message : str) -> tuple[bool, str]:
     return (can_continue, err_message) # This line was already there, but the previous return True was removed.
 def gradio_function(message, history, session_state):
     chat_twin = session_state.get_from_session(SessionState.MODEL_KEY)
-    if(message == "Hi"):
-        chonkie_semantic_embedding = ChonkieSemanticEmbedding(file_name="data/Jag_Kanangi.htm", dir_name=None, text=None)
-        chonkie_semantic_embedding.get_embeddings()
+    number_of_calls = chat_twin.num_calls
 
-    (can_proceed, err_message)= input_guardrails(chat_twin, message)
+    (can_proceed, err_message)= input_guardrails(chat_twin, message, number_of_calls)
     # value_in_dictionary = encode_and_compare(message)
     # message = value_in_dictionary +" If the info tag is present and it is relevant to the question thenyou can respond to the question using the text between the info tag. Do not mention the info tag in your response. " + message 
     # print(message)
+
     return_str = ""
     if(can_proceed):
         return_str = chat_twin.chat(prompt=message)

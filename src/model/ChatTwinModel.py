@@ -31,7 +31,7 @@ class ChatTwin(AbstractChatClient):
         super().__init__(model_name, model_key, model_role_type=model_role_type)
         self.client : Instructor
         self.initialize_client()
-        self.num_calls = 1
+        self.num_calls = 0
 
 
     def initialize_client(self):
@@ -168,6 +168,7 @@ class ChatTwin(AbstractChatClient):
                 """
                 if isinstance(chat_response, GeneralChat):
                     self.add_message(self.ASSISTANT_ROLE, chat_response.message)
+            self.num_calls += 1
         except Exception as e:
             logger.error(f"An error occurred: {e}", exc_info=True)
             return """This is embarrasing. I am an AI assistant who ever so often start hallucinating or stop following instruction.\
