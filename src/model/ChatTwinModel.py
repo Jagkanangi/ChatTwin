@@ -83,7 +83,7 @@ class ChatTwin(AbstractChatClient):
                 self.add_tool_message(completion.choices[0].message, f"The weather in {weather_report.city} is {weather_report.temperature} degrees Celsius with {weather_report.humidity}% humidity.")
                 # Make another call to the model to get a natural language response based on the weather data.
             else:
-                self.add_tool_message(completion.choices[0].message, f"I cannot find the information for {weather_report.city}")
+                self.add_tool_message(completion.choices[0].message, f"I cannot find the information for {weather.city}")
         return True
         # self.chat(callback=True) 
 
