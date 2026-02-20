@@ -5,4 +5,4 @@
 
 [group('run')]
 @run:
-    uv run gradio src/ChatTwin/GradioUI.py
+    uv run gradio src/GradioUI.py
