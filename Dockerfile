@@ -6,12 +6,16 @@ FROM python:3.12-slim
 # PYTHONUNBUFFERED: Prevents Python from buffering stdout and stderr.
 # GRADIO_SERVER_NAME: Binds the Gradio server to all network interfaces.
 # GRADIO_SERVER_PORT: Sets the port for the Gradio server.
-ENV PYTHONUNBUFFERED=1 \
+ENV HF_HOME="/app/.cache" \
+    PYTHONUNBUFFERED=1 \
     GRADIO_SERVER_NAME="0.0.0.0" \
     GRADIO_SERVER_PORT=8080
 
 # Set the working directory in the container
 WORKDIR /app
+
+# create the log directory
+RUN  mkdir -p /app/logs
 
 # Install uv, the fast Python package installer.
 RUN pip install uv
@@ -25,8 +29,6 @@ RUN uv pip install --system -r pyproject.toml
 # Import the chonkie embedding model
 RUN python -c "from chonkie import SemanticChunker; SemanticChunker(embedding_model='minishlab/potion-base-32M')"
 
-# create the log directory
-RUN  mkdir -p /app/logs
 
 # Copy all the files from the current directory to the container.
 COPY . .

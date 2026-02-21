@@ -1,5 +1,6 @@
 import os
 import logging.config
+import yaml
 from pathlib import Path
 
 def init():
@@ -10,6 +11,7 @@ def init():
 
     # 2. Setup Log File Path
     log_file_path_env = os.getenv('LOG_FILE_PATH')
+    log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
 
     if log_file_path_env:
         log_file_path = Path(log_file_path_env)
@@ -21,11 +23,16 @@ def init():
 
     log_file_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # 3. Locate Config (Inside src/config)
-    config_path = SRC_DIR / 'config' / 'logger.conf'
+    # 3. Locate and load YAML Config (Inside src/config)
+    config_path = SRC_DIR / 'config' / 'logger.yaml'
+    
+    with open(config_path, 'r') as f:
+        config = yaml.safe_load(f)
 
-    # 4. Initialize
-    logging.config.fileConfig(
-        config_path,
-        defaults={'log_file_path': str(log_file_path)}
-    )
+    # 4. Set log file path and level in the config
+    config['handlers']['fileHandler']['filename'] = str(log_file_path)
+    config['loggers']['chattwin']['level'] = log_level
+    config['root']['level'] = 'INFO'
+
+    # 5. Initialize
+    logging.config.dictConfig(config)
