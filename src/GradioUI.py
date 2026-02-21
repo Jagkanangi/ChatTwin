@@ -39,13 +39,13 @@ def input_guardrails(chat_twin : ChatTwin, message : str, number_of_calls : int)
         err_message = "Message is too long. If you want to know more about me, please give me your email and optionally a phone number. "
     if(chat_twin.num_calls > 100):
         can_continue = False
-        err_message = "I know you would like to know more about me cause I am that interesting. Please give me your email and optionally a phone number and I will get in touch with you"
+        err_message = "I know you would like to know more about me. Please give me your email and optionally a phone number and I will get in touch with you"
 
 
     
     
     return (can_continue, err_message) # This line was already there, but the previous return True was removed.
-def gradio_function(message, history, session_state):
+def gradio_function(message : str, _, session_state):
     chat_twin = session_state.get_from_session(SessionState.MODEL_KEY)
     number_of_calls = chat_twin.num_calls
 
