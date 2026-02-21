@@ -13,3 +13,5 @@ README.md
 authors.md
 docker-compose.yaml
 justfile
+*.egg-info/
+chroma_data/
