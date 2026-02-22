@@ -1,0 +1,6 @@
+Connection:
+  DB_HOST: ${DB_HOST:-localhost}
+  DB_PORT: ${DB_PORT:-8000}
+  DB_TYPE: ${DB_TYPE:-chroma}
+#Other configurations can be added here as needed for different DB types
+# Example for ChromaDB, Weaviate, Pinecone etc.
