@@ -1,10 +1,8 @@
 from pydantic import BaseModel, Field
-from typing import Union
-
-from pydantic import BaseModel, Field
 from typing import Union, Any
+from src.vo.Metadata import Metadata
 
-__all__ = ["Weather", "GeneralChat", "Contact", "WeatherReport", "Choices", "SessionState"]
+__all__ = ["Weather", "GeneralChat", "Contact", "WeatherReport", "Choices", "SessionState", "SearchResult"]
 
 class Weather(BaseModel):
     """
@@ -73,3 +71,12 @@ class SessionState():
 
     def clear_session(self):
         self.state_dict = {}
+
+class SearchResult(BaseModel):
+    """
+    Represents a single search result from the vector database.
+    """
+    id: str
+    document: str
+    metadata: Metadata | None = None
+    distance: float | None = None

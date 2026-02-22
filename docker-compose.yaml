@@ -8,7 +8,8 @@ services:
       - ./logs:/app/logs
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO} # Use the variable if it exists
-      - CHROMA_PORT=8000
+      - DB_PORT=8000
+      - DB_HOST=localhost
     depends_on:
       - chromadb
   ###### using chromadb but reality is this will be a prod ready db such as weaviate or pinecone 

@@ -111,10 +111,10 @@ class AbstractEmbeddingModel(ABC):
                 raise
         
         # Directory processing is currently disabled.
-        # if self.directory_name is not None and not isText:
-        #     if not self.directory_name.startswith("/app"):
-        #         self.directory_name = "/app/" + self.directory_name
-        #     self.pipeline.fetch_from("file", dir=self.directory_name)
+        if self.directory_name is not None and not isText:
+            if not self.directory_name.startswith("/app"):
+                self.directory_name = "/app/" + self.directory_name
+            self.pipeline.fetch_from("file", dir=self.directory_name)
 
         elif not isText: # Neither file, dir, nor initial text was provided
             logger.error("No input provided for chunking. Please provide a directory, file, or text.")
